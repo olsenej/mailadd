@@ -135,5 +135,5 @@ if [ "$success" -eq 1 ];then
 else
         echo "Ya did it. You can go home now."
 fi
-#echo -e "\t\t\t --Greg Martin"
+#echo -e "\t\t\t --$your_boss"
 exit 0
