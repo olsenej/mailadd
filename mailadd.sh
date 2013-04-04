@@ -15,14 +15,23 @@
 # - initial write
 # * 2/3/13:  Edward
 # - fleshing out functions
+# * 2/14/13: Edward
+# - finished forwardMail() and userMail()
+# * 4/3/13: Edward
+# - added list functionality. Takes list of email addresses in a file via commandline
+# - Finished bothMail()
 
 writeAndRevirt ()
 {
         echo ""
-        echo -e "$1 \t\t $2" >> /etc/mail/virtusertable
+        if [ "$mailoper" == "Both" ];then
+                echo -e "$1 \t\t $2_alias" >> /etc/mail/virtusertable
+        else
+                echo -e "$1 \t\t $2" >> /etc/mail/virtusertable
+        fi
         cwd=`pwd`
         cd /etc/mail
-#        `revirt`
+        revirt
         cd $cwd
         echo "Added $1 to $2"
         echo ""
@@ -33,6 +42,17 @@ checkForDuplicateEntries ()
 {
         echo ""
         areyoustillthere="$(cat /etc/mail/virtusertable |awk '{print $1;}'|grep $1)"
+        if [ "$areyoustillthere" == "$1" ]; then
+                return 0        #Found a match in first column
+        else
+                return 1        #No match in first column
+        fi
+}
+
+checkForDuplicateAlias ()
+{
+        echo ""
+        areyoustillthere="$(cat /etc/aliases |awk '{print $1;}'|grep $1)"
         if [ "$areyoustillthere" == "$1" ]; then
                 return 0        #Found a match in first column
         else
@@ -58,7 +78,12 @@ forwardMail ()
 userMail ()
 {
         echo ""
-        read -p "Enter email address for this user: " useremail
+        if [ "$1" != "" ];then
+                useremail=$1
+                echo -e "Email: $useremail\n"
+        else
+                read -p "Enter email address for this user: " useremail
+        fi
         read -p "Desired username: " username
         if checkForDuplicateEntries $useremail $username; then
                 success=1
@@ -68,6 +93,12 @@ userMail ()
                 if [ $? -eq 0 ]; then
                         userpass="`</dev/urandom tr -dc A-Za-z0-9 | head -c16`"
                         echo $userpass|passwd $username --stdin
+                        echo -e "\n$(tput setaf 2)Client info:$(tput sgr0)"
+                        echo "$useremail"
+                        echo "$(tput setaf 2)USER:$(tput sgr0) $username"
+                        echo -e "$(tput setaf 2)PASS:$(tput sgr0) $userpass\n"
+                        ### For cleanup purposes only on edwardo VM ###
+                        echo $username >> /root/mcleaner.tmp
                 else
                         echo "User already exists. Not changing password."
                 fi
@@ -81,13 +112,14 @@ userMail ()
 bothMail ()
 {
         echo ""
-        echo "bothMail function"
-        echo "Not ready."
+        userMail
+        useralias="${username}_alias"
+        echo -e "$useralias: \t\t $useremail,$username" >> /etc/aliases
+        newaliases
         echo ""
-        success=1
+        success=0
 
 }
-
 
 
 mailInfo ()
@@ -119,15 +151,23 @@ mailInfo ()
 
 #Main
 echo "######################################"
-echo "# Mail account creation software v0.2#"
+echo "# Mail account creation software v1.337#"
 echo "######################################"
 echo ""
 echo ""
 echo ""
 
 #Calling main bulk
-mailInfo
+if [ "$1" != "" ];then
+        echo -e "Using a list I see.\nI'm going to assume it's a list of email addresses.\nMaking new users for all of them.\n"
+        for i in $(cat $1);do
+                echo $i
+                userMail $i
+        done
 
+else
+        mailInfo
+fi
 
 #Ending program gracefully
 if [ "$success" -eq 1 ];then
@@ -135,5 +175,4 @@ if [ "$success" -eq 1 ];then
 else
         echo "Ya did it. You can go home now."
 fi
-#echo -e "\t\t\t --$your_boss"
 exit 0
