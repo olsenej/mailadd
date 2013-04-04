@@ -7,4 +7,4 @@ Local User
 Forward and Local User
 
 ###NOTES###
-	The third option, forward and local user, is still being worked on.
+	The third option, forward and local user, is now done.
